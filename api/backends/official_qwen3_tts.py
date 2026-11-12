@@ -142,7 +142,7 @@ class OfficialQwen3TTSBackend(TTSBackend):
             
             # Load model with detected attention implementation
             self.model = Qwen3TTSModel.from_pretrained(
-                self.model_name,
+                os.getenv("TTS_MODEL_PATH", self.model_name),
                 device_map=self.device,
                 dtype=self.dtype,
                 attn_implementation=attn_impl,
@@ -152,7 +152,8 @@ class OfficialQwen3TTSBackend(TTSBackend):
             self._scan_voice_samples()
             
             # Apply torch.compile() optimization for faster inference
-            if torch.cuda.is_available() and hasattr(torch, 'compile'):
+            if (torch.cuda.is_available() and hasattr(torch, 'compile')
+                    and os.getenv("TTS_ENABLE_COMPILE", "false").lower() == "true"):
                 logger.info("Applying torch.compile() optimization...")
                 try:
                     self.model.model = torch.compile(
@@ -271,6 +272,7 @@ class OfficialQwen3TTSBackend(TTSBackend):
                 language=language,
                 speaker=voice,
                 instruct=instruct,
+                max_new_tokens=int(os.getenv("TTS_MAX_NEW_TOKENS", "2048")),
             )
             
             audio = wavs[0]
