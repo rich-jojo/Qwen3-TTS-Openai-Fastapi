@@ -69,7 +69,11 @@ async def lifespan(app: FastAPI):
     try:
         from .backends import initialize_backend, start_auto_unload, INACTIVITY_TIMEOUT_MINUTES
         logger.info(f"Initializing TTS backend: {TTS_BACKEND}")
-        backend = await initialize_backend(warmup=TTS_WARMUP_ON_START)
+        if os.getenv("TTS_LAZY_LOAD", "true").lower() == "true":
+            from .backends import get_backend
+            backend = get_backend()
+        else:
+            backend = await initialize_backend(warmup=TTS_WARMUP_ON_START)
         logger.info(f"TTS backend '{backend.get_backend_name()}' loaded successfully!")
         logger.info(f"Model: {backend.get_model_id()}")
         

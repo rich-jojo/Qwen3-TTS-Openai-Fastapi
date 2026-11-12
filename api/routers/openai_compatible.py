@@ -6,6 +6,7 @@ Implements endpoints compatible with OpenAI's TTS API specification.
 """
 
 import logging
+import os
 import time
 from typing import List, Optional
 
@@ -186,6 +187,10 @@ async def generate_speech(
         
     except Exception as e:
         raise RuntimeError(f"Speech generation failed: {e}")
+    finally:
+        if os.getenv("TTS_UNLOAD_AFTER_REQUEST", "true").lower() == "true":
+            from ..backends import unload_backend
+            await unload_backend()
 
 
 @router.post("/audio/speech")
@@ -318,7 +323,8 @@ async def list_voices():
     default_languages = ["English", "Chinese", "Japanese", "Korean", "German", "French", "Spanish", "Russian", "Portuguese", "Italian"]
     
     try:
-        backend = await get_tts_backend()
+        from ..backends import get_backend
+        backend = get_backend()
         
         # Get supported speakers from the backend
         speakers = backend.get_supported_voices()
